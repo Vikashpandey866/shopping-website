@@ -7,17 +7,21 @@ from flask import Flask, send_from_directory
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from database import db, init_db
-from routes.auth import auth_bp
-from routes.products import products_bp
-from routes.cart import cart_bp
-from routes.orders import orders_bp
-from routes.admin import admin_bp
+
+# 🔥 FIXED IMPORTS (NO routes folder)
+from auth import auth_bp
+from products import products_bp
+from cart import cart_bp
+from orders import orders_bp
+from admin import admin_bp
+
 import os
+
 
 def create_app():
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-    # 🔥 ROOT folder hi frontend hai
+    # 🔥 Flask app
     app = Flask(__name__, static_folder=BASE_DIR, static_url_path='')
 
     # ── Configuration ─────────────────────────
@@ -48,13 +52,10 @@ def create_app():
     def uploaded_file(filename):
         return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-    # 🔥 FRONTEND FIX (ROOT se serve karega)
-    @app.route('/', defaults={'path': ''})
-    @app.route('/<path:path>')
-    def serve_frontend(path):
-        if path != "" and os.path.exists(os.path.join(BASE_DIR, path)):
-            return send_from_directory(BASE_DIR, path)
-        return send_from_directory(BASE_DIR, 'index.html')
+    # 🔥 SAFE HOME ROUTE (NO CRASH)
+    @app.route('/')
+    def home():
+        return "Backend running successfully 🚀"
 
     # ── DB Init ──────────────────────────────
     with app.app_context():
@@ -63,11 +64,11 @@ def create_app():
     return app
 
 
-# ✅ REQUIRED for Railway (Gunicorn)
+# 🔥 REQUIRED for Railway
 app = create_app()
 
 
-# ✅ Local + Railway compatible run
+# 🔥 Run (Railway + Local)
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
