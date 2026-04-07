@@ -17,36 +17,35 @@ import os
 def create_app():
     app = Flask(__name__, static_folder='../frontend', static_url_path='')
     
-    # ── Configuration ──────────────────────────────────────────────────────────
+    # ── Configuration ─────────────────────────────────────────
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'shopverse-super-secret-key-2024')
     app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'shopverse-jwt-secret-2024')
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///shopverse.db'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(__file__), 'uploads')
-    app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload
-    app.config['JWT_ACCESS_TOKEN_EXPIRES'] = False  # Tokens don't expire (for demo)
+    app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+    app.config['JWT_ACCESS_TOKEN_EXPIRES'] = False
 
-    # Ensure uploads directory exists
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-    # ── Extensions ─────────────────────────────────────────────────────────────
+    # ── Extensions ────────────────────────────────────────────
     CORS(app, origins='*', supports_credentials=True)
     JWTManager(app)
     db.init_app(app)
 
-    # ── Blueprints ─────────────────────────────────────────────────────────────
-    app.register_blueprint(auth_bp,     url_prefix='/api/auth')
+    # ── Blueprints ────────────────────────────────────────────
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(products_bp, url_prefix='/api/products')
-    app.register_blueprint(cart_bp,     url_prefix='/api/cart')
-    app.register_blueprint(orders_bp,   url_prefix='/api/orders')
-    app.register_blueprint(admin_bp,    url_prefix='/api/admin')
+    app.register_blueprint(cart_bp, url_prefix='/api/cart')
+    app.register_blueprint(orders_bp, url_prefix='/api/orders')
+    app.register_blueprint(admin_bp, url_prefix='/api/admin')
 
-    # ── Serve uploaded images ───────────────────────────────────────────────────
+    # ── Uploads ───────────────────────────────────────────────
     @app.route('/uploads/<path:filename>')
     def uploaded_file(filename):
         return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-    # ── Serve frontend (SPA catch-all) ─────────────────────────────────────────
+    # ── Frontend ──────────────────────────────────────────────
     @app.route('/', defaults={'path': ''})
     @app.route('/<path:path>')
     def serve_frontend(path):
@@ -55,14 +54,18 @@ def create_app():
             return send_from_directory(frontend_dir, path)
         return send_from_directory(frontend_dir, 'index.html')
 
-    # ── Init DB & seed data ─────────────────────────────────────────────────────
+    # ── DB Init ───────────────────────────────────────────────
     with app.app_context():
         init_db(app)
 
     return app
 
 
+# 🔥 IMPORTANT (Gunicorn ke liye)
+app = create_app()
+
+
+# 🔥 Local run (Railway ignore karega)
 if __name__ == '__main__':
-    app = create_app()
     port = int(os.environ.get("PORT", 8000))
     app.run(host="0.0.0.0", port=port)
