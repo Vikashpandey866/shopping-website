@@ -42,7 +42,7 @@ def create_app():
     def uploaded_file(filename):
         return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-    # 🔥 SAFE ROUTE (NO CRASH)
+    # 🔥 HEALTH CHECK ROUTE (Railway ke liye best)
     @app.route('/')
     def home():
         return "Backend running successfully 🚀"
@@ -54,7 +54,9 @@ def create_app():
     return app
 
 
+# 🔥 IMPORTANT (Gunicorn ke liye)
 app = create_app()
+
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 8080))
