@@ -1,20 +1,20 @@
 from flask import Flask, send_from_directory
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
-from database import db, init_db
-from routes.auth import auth_bp
-from routes.products import products_bp
-from routes.cart import cart_bp
-from routes.orders import orders_bp
-from routes.admin import admin_bp
+from database import db
+from auth import auth_bp
+from products import products_bp
+from cart import cart_bp
+from orders import orders_bp
+from admin import admin_bp
 import os
 
 def create_app():
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-    # 🔥 ROOT folder ko static bana diya
     app = Flask(__name__, static_folder=BASE_DIR, static_url_path='')
 
+    # CONFIG
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'secret')
     app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'jwt-secret')
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///shopverse.db'
@@ -23,10 +23,12 @@ def create_app():
 
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
+    # EXTENSIONS
     CORS(app)
     JWTManager(app)
     db.init_app(app)
 
+    # ROUTES
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(products_bp, url_prefix='/api/products')
     app.register_blueprint(cart_bp, url_prefix='/api/cart')
@@ -37,21 +39,15 @@ def create_app():
     def uploaded_file(filename):
         return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-    # 🔥 ROOT se serve karega
-    @app.route('/', defaults={'path': ''})
-    @app.route('/<path:path>')
-    def serve_frontend(path):
-        if path != "" and os.path.exists(os.path.join(BASE_DIR, path)):
-            return send_from_directory(BASE_DIR, path)
-        return send_from_directory(BASE_DIR, 'index.html')
-
-    with app.app_context():
-        init_db(app)
+    # SIMPLE TEST ROUTE (IMPORTANT)
+    @app.route('/')
+    def home():
+        return "🔥 ShopVerse Backend Running"
 
     return app
 
 
-# 🔥 MUST for Railway
+# REQUIRED FOR RAILWAY (Gunicorn)
 app = create_app()
 
 
