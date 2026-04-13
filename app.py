@@ -11,12 +11,14 @@ from admin import admin_bp
 
 import os
 
+
 def create_app():
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-    app = Flask(__name__)
+    # 🔥 IMPORTANT: static_folder enable
+    app = Flask(__name__, static_folder=".")
 
-    # Config
+    # ── Config ─────────────────────────
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'secret')
     app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'jwt-secret')
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///shopverse.db'
@@ -25,39 +27,50 @@ def create_app():
 
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-    # Extensions
+    # ── Extensions ─────────────────────
     CORS(app)
     JWTManager(app)
     db.init_app(app)
 
-    # Blueprints
+    # ── Blueprints ─────────────────────
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(products_bp, url_prefix='/api/products')
     app.register_blueprint(cart_bp, url_prefix='/api/cart')
     app.register_blueprint(orders_bp, url_prefix='/api/orders')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
 
-    # Upload route
+    # ── Upload route ───────────────────
     @app.route('/uploads/<path:filename>')
     def uploaded_file(filename):
         return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-    # 🔥 HEALTH CHECK ROUTE (Railway ke liye best)
+    # ── Serve CSS ──────────────────────
+    @app.route('/css/<path:filename>')
+    def serve_css(filename):
+        return send_from_directory(os.path.join(BASE_DIR, 'css'), filename)
+
+    # ── Serve JS ───────────────────────
+    @app.route('/js/<path:filename>')
+    def serve_js(filename):
+        return send_from_directory(os.path.join(BASE_DIR, 'js'), filename)
+
+    # ── Serve Frontend (MAIN FIX 🔥) ───
     @app.route('/')
     def home():
-        return "Backend running successfully 🚀"
+        return send_from_directory(BASE_DIR, 'index.html')
 
-    # DB Init
+    # ── DB Init ────────────────────────
     with app.app_context():
         init_db(app)
 
     return app
 
 
-# 🔥 IMPORTANT (Gunicorn ke liye)
+# 🔥 Gunicorn entry point
 app = create_app()
 
 
+# 🔥 Local run
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
